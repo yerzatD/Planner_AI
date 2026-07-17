@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ГРАФИК — учебный планировщик</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2130;
+    --surface:#242B3D;
+    --surface-2:#2E3650;
+    --line:#3A4258;
+    --paper:#ECE8DD;
+    --muted:#9AA3B8;
+    --accent:#F4C95D;
+    --accent-ink:#3A2E0A;
+    --mint:#6FCF97;
+    --coral:#EF6F6C;
+    --sky:#6FB6E0;
+    --lilac:#B79CED;
+    --sand:#D9A566;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+  a{color:inherit;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 28px;border-bottom:1px solid var(--line);
+  }
+  .wordmark{
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;
+    letter-spacing:0.5px;display:flex;align-items:baseline;gap:8px;
+  }
+  .wordmark span{color:var(--accent);}
+  .topbar .config{display:flex;align-items:center;gap:8px;}
+  .topbar input[type=text]{
+    background:var(--surface);border:1px solid var(--line);color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 10px;border-radius:6px;
+    width:220px;
+  }
+  .topbar label{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- layout states ---------- */
+  #app{max-width:1200px;margin:0 auto;padding:32px 24px 80px;}
+  .hidden{display:none !important;}
+
+  /* ---------- auth screen ---------- */
+  .auth-wrap{
+    display:grid;grid-template-columns:1fr 1fr;gap:0;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    overflow:hidden;min-height:480px;margin-top:40px;
+  }
+  .auth-hero{
+    background:linear-gradient(160deg, var(--surface-2), var(--ink));
+    padding:36px;display:flex;flex-direction:column;justify-content:space-between;
+    border-right:1px solid var(--line);
+  }
+  .auth-hero h1{font-family:'Space Grotesk',sans-serif;font-size:28px;line-height:1.25;margin:0 0 12px;}
+  .auth-hero p{color:var(--muted);font-size:14px;line-height:1.6;max-width:340px;}
+  .mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:24px;}
+  .mini-day{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 4px;min-height:70px;position:relative;}
+  .mini-day .lbl{font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+  .mini-block{border-radius:3px;height:10px;margin-top:4px;}
+  .auth-form{padding:36px;display:flex;flex-direction:column;}
+  .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface-2);padding:4px;border-radius:10px;}
+  .tab{flex:1;text-align:center;padding:9px 0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);}
+  .tab.active{background:var(--accent);color:var(--accent-ink);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-family:'IBM Plex Mono',monospace;}
+  .field input{
+    width:100%;padding:11px 12px;background:var(--ink);border:1px solid var(--line);
+    border-radius:8px;color:var(--paper);font-size:14px;font-family:'Inter',sans-serif;
+  }
+  .field input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent);}
+  .btn{
+    background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;
+    padding:12px 18px;font-weight:600;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .btn:hover{filter:brightness(1.06);}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn.secondary{background:transparent;border:1px solid var(--line);color:var(--paper);}
+  .btn.danger{background:var(--coral);color:#2b0d0c;}
+  .btn.small{padding:7px 12px;font-size:12px;}
+  .err{background:rgba(239,111,108,0.14);border:1px solid var(--coral);color:#ffd4d3;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;}
+  .ok{background:rgba(111,207,151,0.14);border:1px solid var(--mint);color:#d3ffe6;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;}
+
+  /* ---------- dashboard ---------- */
+  .dash{display:grid;grid-template-columns:240px 1fr;gap:24px;align-items:start;}
+  .sidebar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;position:sticky;top:20px;}
+  .who{display:flex;flex-direction:column;gap:2px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line);}
+  .who .name{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:16px;}
+  .who .role{font-size:11px;color:var(--sand);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;}
+  .nav-item{
+    padding:10px 12px;border-radius:8px;font-size:13px;color:var(--muted);cursor:pointer;
+    margin-bottom:4px;display:flex;align-items:center;gap:8px;
+  }
+  .nav-item.active{background:var(--surface-2);color:var(--paper);font-weight:600;}
+  .nav-item:hover{color:var(--paper);}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:20px;}
+  .panel h2{font-family:'Space Grotesk',sans-serif;font-size:19px;margin:0 0 6px;}
+  .panel .sub{color:var(--muted);font-size:13px;margin-bottom:18px;}
+  textarea{
+    width:100%;min-height:130px;background:var(--ink);border:1px solid var(--line);
+    border-radius:8px;color:var(--paper);padding:12px;font-family:'Inter',sans-serif;font-size:14px;resize:vertical;
+  }
+  textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+  /* ---------- legend ---------- */
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 4px;}
+  .legend .chip{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+  .legend .dot{width:9px;height:9px;border-radius:2px;}
+
+  /* ---------- weekly grid (signature element) ---------- */
+  .week{
+    display:grid;grid-template-columns:44px repeat(7, 1fr);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--ink);
+    margin-top:16px;
+  }
+  .week-head{grid-column:1 / -1;display:grid;grid-template-columns:44px repeat(7,1fr);border-bottom:1px solid var(--line);}
+  .week-head .day-col{padding:10px 6px;text-align:center;border-left:1px solid var(--line);}
+  .week-head .day-col .d{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;text-transform:capitalize;}
+  .week-head .day-col .date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);}
+  .hour-labels{display:flex;flex-direction:column;}
+  .hour-labels .h{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);text-align:right;padding-right:6px;box-sizing:border-box;border-top:1px solid var(--line);}
+  .day-track{position:relative;border-left:1px solid var(--line);}
+  .day-track .hourline{position:absolute;left:0;right:0;border-top:1px solid var(--line);opacity:0.6;}
+  .task-block{
+    position:absolute;left:3px;right:3px;border-radius:6px;padding:4px 6px;
+    font-size:10px;line-height:1.25;overflow:hidden;color:#12151c;font-family:'Inter',sans-serif;
+  }
+  .task-block .t{font-family:'IBM Plex Mono',monospace;font-size:9px;opacity:0.75;}
+  .task-block .ti{font-weight:600;}
+
+  .warnings{margin-top:16px;}
+  .warn-item{background:rgba(244,201,93,0.1);border:1px solid var(--accent);color:#ffe9b0;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:8px;}
+
+  .stat-row{display:flex;gap:14px;margin-top:16px;flex-wrap:wrap;}
+  .stat{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:120px;}
+  .stat .n{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;}
+  .stat .l{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+
+  /* history list */
+  .history-item{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--surface-2);}
+  .history-item .prompt{font-size:13px;color:var(--paper);margin-bottom:6px;}
+  .history-item .meta{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+
+  table.users{width:100%;border-collapse:collapse;font-size:13px;}
+  table.users th{text-align:left;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px;border-bottom:1px solid var(--line);}
+  table.users td{padding:8px;border-bottom:1px solid var(--line);}
+
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;}
+
+  @media (max-width:820px){
+    .dash{grid-template-columns:1fr;}
+    .sidebar{position:static;display:flex;justify-content:space-between;align-items:center;}
+    .auth-wrap{grid-template-columns:1fr;}
+    .auth-hero{border-right:none;border-bottom:1px solid var(--line);}
+    .week{grid-template-columns:32px repeat(7,minmax(70px,1fr));overflow-x:auto;}
+    .week-head{grid-template-columns:32px repeat(7,minmax(70px,1fr));}
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wordmark">ГРАФИК<span>.</span></div>
+  <div class="config">
+    <label for="apiBase">API&nbsp;адрес</label>
+    <input id="apiBase" type="text" value="http://localhost:8000">
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- ================= AUTH SCREEN ================= -->
+  <div id="authScreen">
+    <div class="auth-wrap">
+      <div class="auth-hero">
+        <div>
+          <h1>Недельный план,<br>который считается<br>сам за вас.</h1>
+          <p>Укажите количество видеоуроков и свою рутину — ИИ расставит конспект, практику, домашку и квиз вокруг фиксированных дедлайнов недели.</p>
+        </div>
+        <div class="mini-grid" id="miniGrid"></div>
+      </div>
+      <div class="auth-form">
+        <div class="tabs">
+          <div class="tab active" data-tab="login" onclick="switchTab('login')">Вход</div>
+          <div class="tab" data-tab="register" onclick="switchTab('register')">Регистрация</div>
+        </div>
+
+        <div id="authMsg"></div>
+
+        <form id="loginForm" onsubmit="return handleLogin(event)">
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="loginEmail" required>
+          </div>
+          <div class="field">
+            <label>Пароль</label>
+            <input type="password" id="loginPassword" required>
+          </div>
+          <button class="btn" type="submit" id="loginBtn">Войти</button>
+        </form>
+
+        <form id="registerForm" class="hidden" onsubmit="return handleRegister(event)">
+          <div class="field">
+            <label>Имя пользователя</label>
+            <input type="text" id="regUsername" required>
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="regEmail" required>
+          </div>
+          <div class="field">
+            <label>Пароль</label>
+            <input type="password" id="regPassword" required>
+          </div>
+          <button class="btn" type="submit" id="regBtn">Создать аккаунт</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DASHBOARD ================= -->
+  <div id="dashScreen" class="hidden">
+    <div class="dash">
+      <div class="sidebar">
+        <div class="who">
+          <div class="name" id="whoName">—</div>
+          <div class="role" id="whoRole">user</div>
+        </div>
+        <div class="nav-item active" data-view="planner" onclick="switchView('planner')">📅 Планировщик</div>
+        <div class="nav-item" data-view="history" onclick="switchView('history')">🕘 История</div>
+        <div class="nav-item" data-view="profile" onclick="switchView('profile')">👤 Профиль</div>
+        <div class="nav-item hidden" id="adminNav" data-view="admin" onclick="switchView('admin')">🛠 Админ</div>
+        <div class="nav-item" onclick="handleLogout()">↩ Выйти</div>
+      </div>
+
+      <div class="main">
+        <!-- PLANNER VIEW -->
+        <div id="view-planner" class="view">
+          <div class="panel">
+            <h2>Новый план на неделю</h2>
+            <div class="sub">Опишите количество видеоуроков и вашу рутину (работа, тренировки, хобби) по дням недели.</div>
+            <div id="plannerMsg"></div>
+            <textarea id="promptInput" placeholder="Например: Видеоуроков — 8. Понедельник: работа 09:00-18:00, тренировка 19:00-20:30. Вторник: работа 09:00-18:00. ..."></textarea>
+            <div style="margin-top:12px;">
+              <button class="btn" id="genBtn" onclick="handleGenerate()">Сгенерировать план</button>
+            </div>
+          </div>
+
+          <div class="panel" id="resultPanel" style="display:none;">
+            <h2>Ваш план</h2>
+            <div class="legend" id="legend"></div>
+            <div id="weekWrap"></div>
+            <div class="stat-row" id="statRow"></div>
+            <div class="warnings" id="warnWrap"></div>
+          </div>
+        </div>
+
+        <!-- HISTORY VIEW -->
+        <div id="view-history" class="view hidden">
+          <div class="panel">
+            <h2>История запросов</h2>
+            <div class="sub">Все планы, которые вы когда-либо запрашивали.</div>
+            <div id="historyList"></div>
+          </div>
+        </div>
+
+        <!-- PROFILE VIEW -->
+        <div id="view-profile" class="view hidden">
+          <div class="panel">
+            <h2>Профиль</h2>
+            <div id="profileMsg"></div>
+            <div class="field">
+              <label>Имя пользователя</label>
+              <input type="text" id="profUsername">
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input type="email" id="profEmail">
+            </div>
+            <button class="btn" onclick="handleUpdateProfile()">Сохранить</button>
+          </div>
+        </div>
+
+        <!-- ADMIN VIEW -->
+        <div id="view-admin" class="view hidden">
+          <div class="panel">
+            <h2>Пользователи</h2>
+            <div id="adminMsg"></div>
+            <table class="users">
+              <thead><tr><th>ID</th><th>Имя</th><th>Email</th><th></th></tr></thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   НАСТРОЙКА МАРШРУТОВ
+   main.py из проекта не содержит вызовов app.include_router(...),
+   поэтому префиксы роутеров неизвестны. Ниже — предположение:
+   user_router подключен с prefix="/users", chat_router — с prefix="/chat".
+   Если у вас иначе, поменяйте пути в этом объекте.
+============================================================ */
+const ROUTES = {
+  register:   '/users/',
+  login:      '/users/login',
+  me:         '/users/get/me',
+  updateMe:   '/users/update/me',
+  allUsers:   '/users/get_users',
+  deleteUser: (id) => `/users/delete/${id}`,
+  chatPrompt: '/chat/prompt',
+  chatAll:    '/chat/all',
+  chatLast:   '/chat/last/chat',
+};
+
+const TASK_COLORS = {
+  video_lesson: 'var(--sky)',
+  conspect:     'var(--lilac)',
+  practice:     'var(--mint)',
+  homework:     'var(--sand)',
+  quiz:         'var(--coral)',
+  review:       'var(--accent)',
+  default:      'var(--muted)',
+};
+const TASK_LABELS = {
+  video_lesson: 'Видеоурок',
+  conspect: 'Конспект',
+  practice: 'Практика',
+  homework: 'Домашнее задание',
+  quiz: 'Квиз/тест',
+  review: 'Работа над ошибками',
+  default: 'Другое',
+};
+
+let state = { token: null, user: null };
+
+function apiBase(){ return document.getElementById('apiBase').value.replace(/\/$/,''); }
+
+async function api(path, options = {}) {
+  const headers = options.headers || {};
+  if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+  const res = await fetch(apiBase() + path, { ...options, headers });
+  let data = null;
+  try { data = await res.json(); } catch(e) {}
+  if (!res.ok) {
+    const detail = (data && (data.detail || data.message)) || `Ошибка ${res.status}`;
+    throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+  }
+  return data;
+}
+
+/* ---------------- decorative mini grid on auth screen ---------------- */
+function renderMiniGrid(){
+  const days = ['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];
+  const colors = ['sky','lilac','mint','sand','coral','accent','sky'];
+  const el = document.getElementById('miniGrid');
+  el.innerHTML = days.map((d,i)=>`
+    <div class="mini-day">
+      <div class="lbl">${d}</div>
+      <div class="mini-block" style="background:var(--${colors[i]});width:${40+((i*13)%50)}%"></div>
+      <div class="mini-block" style="background:var(--${colors[(i+2)%7]});width:${30+((i*23)%60)}%"></div>
+    </div>`).join('');
+}
+renderMiniGrid();
+
+/* ---------------- auth tabs ---------------- */
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  document.getElementById('loginForm').classList.toggle('hidden', tab!=='login');
+  document.getElementById('registerForm').classList.toggle('hidden', tab!=='register');
+  document.getElementById('authMsg').innerHTML='';
+}
+
+function showMsg(elId, text, type='err'){
+  document.getElementById(elId).innerHTML = `<div class="${type}">${text}</div>`;
+}
+function clearMsg(elId){ document.getElementById(elId).innerHTML=''; }
+
+/* ---------------- auth handlers ---------------- */
+async function handleRegister(e){
+  e.preventDefault();
+  clearMsg('authMsg');
+  const btn = document.getElementById('regBtn'); btn.disabled = true;
+  try{
+    await api(ROUTES.register, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        username: document.getElementById('regUsername').value,
+        email: document.getElementById('regEmail').value,
+        password: document.getElementById('regPassword').value,
+      })
+    });
+    showMsg('authMsg','Аккаунт создан. Теперь войдите.','ok');
+    switchTab('login');
+  }catch(err){
+    showMsg('authMsg', err.message);
+  }finally{ btn.disabled=false; }
+}
+
+async function handleLogin(e){
+  e.preventDefault();
+  clearMsg('authMsg');
+  const btn = document.getElementById('loginBtn'); btn.disabled = true;
+  try{
+    const form = new URLSearchParams();
+    form.append('username', document.getElementById('loginEmail').value);
+    form.append('password', document.getElementById('loginPassword').value);
+    const data = await api(ROUTES.login, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: form.toString()
+    });
+    state.token = data.access_token;
+    await loadMe();
+    enterDashboard();
+  }catch(err){
+    showMsg('authMsg', err.message);
+  }finally{ btn.disabled=false; }
+}
+
+function handleLogout(){
+  state.token = null;
+  state.user = null;
+  document.getElementById('dashScreen').classList.add('hidden');
+  document.getElementById('authScreen').classList.remove('hidden');
+}
+
+async function loadMe(){
+  state.user = await api(ROUTES.me);
+}
+
+function enterDashboard(){
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('dashScreen').classList.remove('hidden');
+  document.getElementById('whoName').textContent = state.user.username;
+  document.getElementById('whoRole').textContent = state.user.role || 'user';
+  document.getElementById('adminNav').classList.toggle('hidden', state.user.role !== 'admin');
+  document.getElementById('profUsername').value = state.user.username;
+  document.getElementById('profEmail').value = state.user.email;
+  switchView('planner');
+}
+
+/* ---------------- view switching ---------------- */
+function switchView(view){
+  document.querySelectorAll('.nav-item[data-view]').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  document.getElementById('view-'+view).classList.remove('hidden');
+  if (view==='history') loadHistory();
+  if (view==='admin') loadUsers();
+}
+
+/* ---------------- profile ---------------- */
+async function handleUpdateProfile(){
+  clearMsg('profileMsg');
+  try{
+    const updated = await api(ROUTES.updateMe, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        username: document.getElementById('profUsername').value,
+        email: document.getElementById('profEmail').value,
+      })
+    });
+    state.user = { ...state.user, ...updated };
+    document.getElementById('whoName').textContent = state.user.username;
+    showMsg('profileMsg','Профиль обновлён.','ok');
+  }catch(err){
+    showMsg('profileMsg', err.message);
+  }
+}
+
+/* ---------------- admin ---------------- */
+async function loadUsers(){
+  clearMsg('adminMsg');
+  try{
+    const users = await api(ROUTES.allUsers);
+    const body = document.getElementById('usersBody');
+    body.innerHTML = users.map(u => `
+      <tr>
+        <td class="mono">${u.id}</td>
+        <td>${u.username}</td>
+        <td>${u.email}</td>
+        <td><button class="btn danger small" onclick="handleDeleteUser(${u.id})">Удалить</button></td>
+      </tr>`).join('') || '<tr><td colspan="4" class="empty">Пользователей нет</td></tr>';
+  }catch(err){
+    showMsg('adminMsg', err.message);
+  }
+}
+async function handleDeleteUser(id){
+  if (!confirm('Удалить пользователя #' + id + '?')) return;
+  try{
+    await api(ROUTES.deleteUser(id), { method:'DELETE' });
+    loadUsers();
+  }catch(err){
+    showMsg('adminMsg', err.message);
+  }
+}
+
+/* ---------------- history ---------------- */
+async function loadHistory(){
+  const list = document.getElementById('historyList');
+  list.innerHTML = '<div class="empty">Загрузка…</div>';
+  try{
+    const chats = await api(ROUTES.chatAll);
+    if (!chats.length){ list.innerHTML = '<div class="empty">Пока нет запросов</div>'; return; }
+    list.innerHTML = chats.slice().reverse().map(c => `
+      <div class="history-item">
+        <div class="meta">#${c.id}</div>
+        <div class="prompt">${escapeHtml(typeof c.prompt === 'string' ? c.prompt : JSON.stringify(c.prompt))}</div>
+        <button class="btn secondary small" onclick='renderPlanFromHistory(${c.id})'>Показать план</button>
+      </div>`).join('');
+    window.__history = chats;
+  }catch(err){
+    list.innerHTML = `<div class="err">${err.message}</div>`;
+  }
+}
+function renderPlanFromHistory(id){
+  const chat = (window.__history||[]).find(c => c.id === id);
+  if (!chat) return;
+  switchView('planner');
+  document.querySelectorAll('.nav-item[data-view]').forEach(n=>n.classList.toggle('active', n.dataset.view==='planner'));
+  renderResult(chat.response_from_ai);
+}
+
+/* ---------------- generate plan ---------------- */
+async function handleGenerate(){
+  clearMsg('plannerMsg');
+  const btn = document.getElementById('genBtn');
+  const prompt = document.getElementById('promptInput').value.trim();
+  if (!prompt){ showMsg('plannerMsg','Опишите видеоуроки и рутину перед генерацией.'); return; }
+  btn.disabled = true; btn.textContent = 'Считаем…';
+  try{
+    const chat = await api(ROUTES.chatPrompt, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt })
+    });
+    renderResult(chat.response_from_ai);
+  }catch(err){
+    showMsg('plannerMsg', err.message);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Сгенерировать план';
+  }
+}
+
+/* ---------------- weekly grid renderer (signature element) ---------------- */
+function timeToMin(t){
+  if (!t) return null;
+  const [h,m] = t.split(':').map(Number);
+  return h*60 + (m||0);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderResult(plan){
+  document.getElementById('resultPanel').style.display = 'block';
+
+  // legend
+  const usedTypes = new Set();
+  (plan.plan||[]).forEach(day => (day.tasks||[]).forEach(t => usedTypes.add(t.type)));
+  document.getElementById('legend').innerHTML = [...usedTypes].map(type => `
+    <div class="chip"><div class="dot" style="background:${TASK_COLORS[type]||TASK_COLORS.default}"></div>${TASK_LABELS[type]||type}</div>
+  `).join('');
+
+  // grid bounds
+  const DAY_START = 7*60, DAY_END = 23*60; // 07:00 - 23:00
+  const totalMin = DAY_END - DAY_START;
+  const pxPerMin = 1.1; // controls block height density
+  const trackHeight = totalMin * pxPerMin;
+
+  const days = plan.plan || [];
+  let hourLabelsHtml = '';
+  for (let h=7; h<=23; h++){
+    hourLabelsHtml += `<div class="h" style="height:${60*pxPerMin}px;">${h}:00</div>`;
+  }
+
+  let headHtml = `<div class="day-col" style="border-left:none;"></div>`;
+  let bodyDaysHtml = '';
+  days.forEach(day => {
+    headHtml += `<div class="day-col"><div class="d">${day.day}</div><div class="date mono">${day.date||''}</div></div>`;
+
+    let hourlines = '';
+    for (let m=0; m<=totalMin; m+=60){
+      hourlines += `<div class="hourline" style="top:${m*pxPerMin}px;"></div>`;
+    }
+
+    let blocks = '';
+    (day.tasks||[]).forEach(t => {
+      const start = timeToMin(t.start_time);
+      const end = timeToMin(t.end_time);
+      if (start===null || end===null) return;
+      const top = Math.max(0, (start - DAY_START) * pxPerMin);
+      const height = Math.max(16, (end - start) * pxPerMin);
+      const color = TASK_COLORS[t.type] || TASK_COLORS.default;
+      blocks += `
+        <div class="task-block" style="top:${top}px;height:${height}px;background:${color};">
+          <div class="t">${t.start_time}–${t.end_time}</div>
+          <div class="ti">${escapeHtml(t.title||'')}</div>
+        </div>`;
+    });
+
+    bodyDaysHtml += `<div class="day-track" style="height:${trackHeight}px;">${hourlines}${blocks}</div>`;
+  });
+
+  document.getElementById('weekWrap').innerHTML = `
+    <div class="week">
+      <div class="week-head">${headHtml}</div>
+      <div class="hour-labels">${hourLabelsHtml}</div>
+      ${bodyDaysHtml}
+    </div>`;
+
+  // stats
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat"><div class="n">${plan.total_lessons ?? '—'}</div><div class="l">ВСЕГО УРОКОВ</div></div>
+    <div class="stat"><div class="n">${plan.lessons_planned ?? '—'}</div><div class="l">ЗАПЛАНИРОВАНО</div></div>
+  `;
+
+  // warnings
+  const warnWrap = document.getElementById('warnWrap');
+  if (plan.warnings && plan.warnings.length){
+    warnWrap.innerHTML = plan.warnings.map(w => `<div class="warn-item">⚠ ${escapeHtml(w)}</div>`).join('');
+  } else {
+    warnWrap.innerHTML = '';
+  }
+}
+</script>
+</body>
+</html>
