@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Planner_AI</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div>
+      <div class="sidebar-brand"><span class="dot"></span> Planner_AI</div>
+      <div class="role-stamp" id="roleStamp" style="margin-top:14px;">…</div>
+    </div>
+
+    <!-- student nav -->
+    <nav class="nav-group" id="navStudent" hidden>
+      <button class="nav-link active" data-view="plan"><span class="ic">▦</span> Мой план</button>
+      <button class="nav-link" data-view="generate"><span class="ic">✎</span> Новый план</button>
+      <button class="nav-link" data-view="history"><span class="ic">☰</span> История</button>
+      <button class="nav-link" data-view="profile"><span class="ic">◍</span> Профиль</button>
+    </nav>
+
+    <!-- admin nav -->
+    <nav class="nav-group" id="navAdmin" hidden>
+      <button class="nav-link active" data-view="roster"><span class="ic">▤</span> Студенты</button>
+      <button class="nav-link" data-view="profile"><span class="ic">◍</span> Профиль</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar" id="avatarInitial">?</div>
+        <div>
+          <div class="name" id="sidebarName">…</div>
+          <div class="mail" id="sidebarEmail">…</div>
+        </div>
+      </div>
+      <div class="logout-link">
+        <button id="logoutBtn" type="button">Выйти →</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center;">
+        <button class="menu-btn" id="menuBtn" aria-label="Меню">☰</button>
+        <div class="topbar-title">
+          <h2 id="topbarTitle">Загрузка…</h2>
+          <p id="topbarSubtitle"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENT: weekly plan -->
+    <section class="view" id="view-plan" hidden>
+      <div class="plan-warnings" id="planWarnings"></div>
+      <div class="plan-meta-row" id="planMeta"></div>
+      <div id="planContainer">
+        <div class="empty-state">
+          <div class="glyph">📅</div>
+          <h4>Плана пока нет</h4>
+          <p>Создай первый план на вкладке «Новый план».</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDENT: generate -->
+    <section class="view" id="view-generate" hidden>
+      <div class="card prompt-card">
+        <div class="prompt-head">
+          <h3>Опиши свою неделю</h3>
+          <p>Укажи, сколько видеоуроков нужно пройти и когда ты занят — тренировки, работа, другие дела.</p>
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar"><span></span><span></span><span></span></div>
+          <textarea id="promptInput" placeholder="Например: нужно посмотреть 8 видеоуроков. По вторникам и четвергам тренировка с 18:00 до 20:00, по будням работа с 09:00 до 17:00, воскресенье выходной."></textarea>
+        </div>
+        <div class="prompt-actions">
+          <span class="prompt-hint" id="promptHint">⌘ + Enter — отправить</span>
+          <button class="btn btn-primary" id="generateBtn" type="button">Сгенерировать план</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDENT: history -->
+    <section class="view" id="view-history" hidden>
+      <div class="card" id="historyList">
+        <div class="empty-state">
+          <div class="glyph">☰</div>
+          <h4>История пуста</h4>
+          <p>Здесь появятся все твои запросы к ИИ-планировщику.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN: roster -->
+    <section class="view" id="view-roster" hidden>
+      <div class="section-head">
+        <h3>Студенты</h3>
+        <span class="count" id="rosterCount"></span>
+      </div>
+      <div class="card" style="overflow-x:auto;">
+        <table class="roster-table" id="rosterTable">
+          <thead>
+            <tr><th>Студент</th><th>Email</th><th>Роль</th><th></th></tr>
+          </thead>
+          <tbody id="rosterBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PROFILE (both roles) -->
+    <section class="view" id="view-profile" hidden>
+      <div class="card card-pad profile-form">
+        <h3 style="margin-bottom:18px;">Профиль</h3>
+        <form id="profileForm">
+          <div class="field">
+            <label for="profileUsername">Имя</label>
+            <input id="profileUsername" type="text" required />
+          </div>
+          <div class="field">
+            <label for="profileEmail">Email</label>
+            <input id="profileEmail" type="email" required />
+          </div>
+          <button class="btn btn-primary" type="submit" id="profileSubmit">Сохранить</button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- delete confirmation modal -->
+<div class="modal-backdrop" id="deleteModal">
+  <div class="modal">
+    <h4>Удалить студента?</h4>
+    <p id="deleteModalText">Это действие нельзя отменить.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" id="cancelDelete">Отмена</button>
+      <button class="btn btn-danger btn-sm" id="confirmDelete">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
